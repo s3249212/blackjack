@@ -1,6 +1,6 @@
 class Deck {
     constructor(){
-        this._deck = createArrayWithAllCards();
+        this._deck = this.createArrayWithAllCards();
         this.shuffle();
     }
 
@@ -24,7 +24,7 @@ class Deck {
         // go through the deck 'from left to right' and for each card either keep that card in position or swap it with a random card to the right of it
         for (let i = 0; i < l - 1; i++){
             // find the 'swap partner', the range includes i, so there is an equal chance it picks i as any card card to the right of it
-            swapPosition = Math.floor((l - i) * Math.random()) + i;
+            let swapPosition = Math.floor((l - i) * Math.random()) + i;
             // perform the swap
             h = this._deck[i];
             this._deck[i] = this._deck[swapPosition];
@@ -96,12 +96,12 @@ class Hand {
 
 class Model {
     constructor() {
-        this._deck = new Deck;
+        this.reset();
         this._listeners = [];
-        this._status = 0;
     }
 
     reset(){
+        this._status = 0;
         this._deck = new Deck();
         this.player = new Hand();
         this.dealer = new Hand();
@@ -110,11 +110,13 @@ class Model {
             this.player.addCard(this._deck.draw());
             this.dealer.addCard(this._deck.draw());
         }
+        this.update();
     }
 
     hit(){
         this.player.addCard(this._deck.draw());
         this._validate();
+        this.update();
     }
 
     _validate(){
@@ -164,7 +166,7 @@ class View {
         this._playerCardsField.textContent = this._model.player.cards.join(' ');
         if (this._model.isInPlay) {
             this._dealerCardsField.textContent = this._model.dealer.cards.join(' ');
-        else {
+        } else {
             this._dealerCardsField.textContent = this._model.dealer.cards[0] + ' ?';
         }
          
@@ -187,10 +189,58 @@ class View {
         }
         
         // change button text from deal to hit and back
-        
-        this._dealHitButton.textContent
-
-
-
+        if (this._model.isInPlay){
+            this._dealHitButton.textContent = "hit";
+        } else {
+            this._dealHitButton.textContent = "deal";
+        }
     }
 }
+
+class DealOrHit {
+    constructor(model) {
+        this._model = model;
+    }
+
+    handleEvent(event) {
+        console.log('ddd')
+        console.log(this._model);
+        if (this._model.isInPlay) {
+            this._model.hit();
+        } else {
+            this._model.reset();
+        }
+    }
+}
+
+class Controller {
+    
+
+    constructor(model) {
+        this._model = model;
+        console.log(model);
+        this._dealHitButton = document.getElementById('hit');
+        this._passButton = document.getElementById('pass');
+        this._dealHitButton.addEventListener('click', new DealOrHit(model));
+        this._passButton.addEventListener('click', this.pass);
+    }
+
+    dealOrHit(){
+        console.log('ddd')
+        console.log(this._model);
+        if (this._model.isInPlay) {
+            this._model.hit();
+        } else {
+            this._model.reset();
+        }
+    }
+
+    pass() {
+        return;
+    }
+}
+
+let model = new Model();
+let view = new View(model);
+model.addListener(view);
+let controller = new Controller(model);
