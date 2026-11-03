@@ -1,4 +1,8 @@
-
+const BLACKJACK = 21;
+const NO_RESULT = 0;
+const PLAYER_LOSS = 1;
+const STANDOFF = 2;
+const PLAYER_WIN = 3;
 
 
 class Deck {
@@ -100,10 +104,13 @@ class Hand {
 class Model {
     constructor() {
         this._listeners = [];
+        this._inPlay = false;
+        this._result = NO_RESULT;
     }
 
     reset(){
-        this._status = 0;
+        this._inPlay = true;
+        this._status = NO_RESULT;
         this._deck = new Deck();
         this.player = new Hand();
         this.dealer = new Hand();
@@ -116,20 +123,45 @@ class Model {
     }
 
     hit(){
+        if (!this._inPlay) {
+            return;
+        }
         this.player.addCard(this._deck.draw());
         this._validate();
         this.update();
     }
 
     pass(){
+        if (!this._inPlay) {
+            return;
+        }
+        while (this.dealer.score < 17) {
+            this.dealer.addCard(this._deck.draw());
+        }
         
+        // speler heeft hier sowieso minder dan 21
+        if (this.dealer.score > 21 || this.dealer.score < this.player.score) {
+            // speler heeft gewonnen
+            this._result = PLAYER_WIN;
+        } else if (this.dealer.score > this.player.score){
+            // dealer heeft gewonnen (dealer kan hier niet meer dan 21 hebben)
+            this._result = PLAYER_LOSS;
+        } else {
+            // standoff
+            this._result = STANDOFF;
+        }
+        this._inPlay = false;
+
+        this.update();
     }
 
     _validate(){
         if (this.player.score > 21) {
-            this._status = -1;
+            this._result = PLAYER_LOSS;
+        this._inPlay = false;
         } else if (this.player.score == 21) {
-            this._status = 1;
+            this._result = PLAYER_WIN;
+        this._inPlay = false;
         }
     }
 
@@ -138,21 +170,16 @@ class Model {
     }
 
     update(){
+        console.log(this.dealer.cards);
         this._listeners.forEach(e => e.update());
     }
 
     get isInPlay() {
-        return this._status == 0;
+        return this._inPlay;
     }
 
     get result() {
-        if (this._status == -1) {
-            return 'loss';
-        } else if (this._status == 1) {
-            return 'win';
-        } else {
-            return 'still playing...';
-        }
+        return this._result;
     }
 }
 
@@ -169,11 +196,12 @@ class View {
 
     update(){
         // display cards
+        console.log(`view.update inplay? -> ${this._model.isInPlay}`);
         this._playerCardsField.textContent = this._model.player.cards.join(' ');
         if (this._model.isInPlay) {
-            this._dealerCardsField.textContent = this._model.dealer.cards.join(' ');
-        } else {
             this._dealerCardsField.textContent = this._model.dealer.cards[0] + ' ?';
+        } else {
+            this._dealerCardsField.textContent = this._model.dealer.cards.join(' ');
         }
          
 
@@ -193,7 +221,20 @@ class View {
             console.log(this._endResultField.display);
         } else {
             this._endResultField.style.display = 'block';
-            this._endResultField.textContent = model.result;
+            switch (this._model.result) {
+                case PLAYER_WIN:
+                    this._endResultField.textContent = "Je hebt gewonnen";
+                    break;
+                case PLAYER_LOSS:
+                    this._endResultField.textContent = "Je hebt verloren";
+                    break;
+                case STANDOFF:
+                    this._endResultField.textContent = "Het is gelijkspel";
+                    break;
+                default:
+                    this._endResultField.textContent = "Dit wordt als het goed is niet weer gegeven.";
+                    break;
+            }
         }
         
         // change button text from deal to hit and back
@@ -222,6 +263,18 @@ class DealOrHit {
     }
 }
 
+class PassButton {
+    constructor(model) {
+        this._model = model;
+    }
+
+    handleEvent(event) {
+        if (this._model.isInPlay) {
+            this._model.pass();
+        }
+    }
+}
+
 class Controller {
     
 
@@ -230,7 +283,7 @@ class Controller {
         this._dealHitButton = document.getElementById('hit');
         this._passButton = document.getElementById('pass');
         this._dealHitButton.addEventListener('click', new DealOrHit(model));
-        this._passButton.addEventListener('click', this.pass);
+        this._passButton.addEventListener('click', new PassButton(model));
     }
 
     dealOrHit(){
@@ -244,7 +297,7 @@ class Controller {
     }
 
     pass() {
-        return;
+        this._model.pass();
     }
 }
 
