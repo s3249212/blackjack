@@ -1,3 +1,6 @@
+
+
+
 class Deck {
     constructor(){
         this._deck = this.createArrayWithAllCards();
@@ -43,7 +46,7 @@ class Hand {
     }
 
     get cards(){
-        return cards
+        return this._cards;
     }
 
     get scores(){
@@ -96,7 +99,6 @@ class Hand {
 
 class Model {
     constructor() {
-        this.reset();
         this._listeners = [];
     }
 
@@ -117,6 +119,10 @@ class Model {
         this.player.addCard(this._deck.draw());
         this._validate();
         this.update();
+    }
+
+    pass(){
+        
     }
 
     _validate(){
@@ -157,7 +163,7 @@ class View {
         this._playerScoreField = document.getElementById('player_score');
         this._dealerCardsField = document.getElementById('dealer_cards');
         this._dealerScoreField = document.getElementById('dealer_score');
-        this._endResultField = document.getElementById('win_or_lose');
+        this._endResultField = document.getElementById('winOrLoss');
         this._dealHitButton = document.getElementById('hit');
     }
 
@@ -182,17 +188,19 @@ class View {
         
         // display result
         if (this._model.isInPlay){
-            this._endResultField.display = 'none';
+            console.log('is in play')
+            this._endResultField.style.display = 'none';
+            console.log(this._endResultField.display);
         } else {
-            this._endResultField.display = 'block';
+            this._endResultField.style.display = 'block';
             this._endResultField.textContent = model.result;
         }
         
         // change button text from deal to hit and back
         if (this._model.isInPlay){
-            this._dealHitButton.textContent = "hit";
+            this._dealHitButton.textContent = "Hit";
         } else {
-            this._dealHitButton.textContent = "deal";
+            this._dealHitButton.textContent = "Delen";
         }
     }
 }
@@ -205,6 +213,7 @@ class DealOrHit {
     handleEvent(event) {
         console.log('ddd')
         console.log(this._model);
+        console.log(this._model._listeners)
         if (this._model.isInPlay) {
             this._model.hit();
         } else {
@@ -218,7 +227,6 @@ class Controller {
 
     constructor(model) {
         this._model = model;
-        console.log(model);
         this._dealHitButton = document.getElementById('hit');
         this._passButton = document.getElementById('pass');
         this._dealHitButton.addEventListener('click', new DealOrHit(model));
