@@ -42,78 +42,96 @@ class Deck {
     }
 
     draw(){
-        return this._deck.pop();
+        if(this._deck.length === 0) {
+            console.log('Out of cards')
+            return undefined;
+        } else {
+            return this._deck.pop();
+        }
     }
+}
+
+function scoreCard(card){
+    switch (card[1]) {
+        case "A":
+            return 1;
+        case "K":
+        case "Q":
+        case "J":
+            return 10;
+        default:
+            return Number(card.slice(1));
+    }
+}
+
+function isAce(card) {
+    return card[1] === 'A';
 }
 
 class Hand {
     constructor() {
         this._cards = []
-    }
+        this._baseScore = 0;
+        this._nAces = 0;
 
-    get cards(){
-        return this._cards;
+        this._possibleScores = [];
+        this._bestScore = 0;
+
+    }
+    
+    addCard(card){
+        this._cards.push(card);
+
+        this._baseScore += scoreCard(card);
+        if (isAce(card)){
+            this._nAces++;
+        }
+
+        this.updateScores();
+        this.updateScore();
     }
 
     // possible scores
     //  - since each ace is worth at least 1 but can optionally add another 10,
     //  - aces create [number of aces] + 1 possible scores
     //  - we only need to give the first two options if BLACKJACK is 21 (or lower) but since we want to make it flexible we give all options
-    get scores(){
-        let score = 0;
-        let nAces = 0;
-
-        for (let card of this._cards){
-            switch (card[1]) {
-                case "A":
-                    score += 1;
-                    nAces += 1;
-                    break;
-                case "K":
-                case "Q":
-                case "J":
-                    score += 10;
-                    break;
-                default:
-                    score += Number(card.slice(1));
-                    break;
-            }
+    updateScores(){
+        this._possibleScores = [];
+        for (let i = 0; i <= this._nAces; i++){
+            this._possibleScores.push(this._baseScore + i * 10);
         }
-
-        let scores = [];
-
-        for (let i = 0; i <= nAces; i++){
-            scores.append(score + i * 10);
-        }
-
-        return scores;
     }
 
     // current best score
     // - the scores will always be in ascending order
     // - therefore, if we go through the scores from back to front and pick the first option that is less than or equal to BLACKJACK, we have found our best score
-    // - if no score is less than or equal to BLACKJACK, we will have lost but we still need to return a value. We simply pick the first score in the list, since there is guaranteed to at least be one score in the list, and it will also be the one that is closest to BLACKJACK  
-    get score(){
-        let bestScore;
-        let scores = this.scores;
+    // - if no score is less than or equal to BLACKJACK, we will have lost but we still need to return a value. We simply pick the first score in the list, since there is guaranteed to at least be one score in the list, and it will also be the one that is closest to BLACKJACK
+    updateScore(){
+        this._bestScore = undefined;
 
-        for (let i = scores.length - 1; i >= 0; i--){
-            if (scores[i] <= BLACKJACK) {
-                bestScore = scores[i];
+        for (let i = this._possibleScores.length - 1; i >= 0; i--){
+            if (this._possibleScores[i] <= BLACKJACK) {
+                this._bestScore = this._possibleScores[i];
                 break;
             }
         }
 
-        if (bestScore === undefined) {
-            bestScore = scores[0];
+        if (this._bestScore === undefined){
+            this._bestScore = this._possibleScores[0];
         }
-
-        return bestScore;
     }
 
-    addCard(card){
-        this._cards.push(card);
+    get cards(){
+        return this._cards;
     }
+
+    get scores(){
+        return this._possibleScores;
+    }
+
+    get score(){
+        return this._bestScore;
+    }   
 }
 
 class Model {
@@ -158,7 +176,7 @@ class Model {
             this.dealer.addCard(this._deck.draw());
         }
         
-        // speler heeft hier sowieso minder dan 21
+        // the player is guaranteed to have less than 21 at this point
         if (this.dealer.score > BLACKJACK || this.dealer.score < this.player.score) {
             this._status = PLAYER_WIN;
         } else if (this.dealer.score > this.player.score){
@@ -216,7 +234,7 @@ class DealerCardsView {
     update() {
         let shownCards = copyArray(this._model.dealer.cards);
         if (this._model.isInPlay){
-            shownCards[1] = '??'
+            shownCards[shownCards.length - 1] = '??'
         }
         this._element.textContent = shownCards.join(' ');
     }
