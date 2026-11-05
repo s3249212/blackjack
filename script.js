@@ -1,7 +1,9 @@
 const BASE_DECK = ["♤2", "♡2", "♢2", "♧2", "♤3", "♡3", "♢3", "♧3", "♤4", "♡4", "♢4", "♧4", "♤5", "♡5", "♢5", "♧5", "♤6", "♡6", "♢6", "♧6", "♤7", "♡7", "♢7", "♧7", "♤8", "♡8", "♢8", "♧8", "♤9", "♡9", "♢9", "♧9", "♤10", "♡10", "♢10", "♧10", "♤J", "♡J", "♢J", "♧J", "♤Q", "♡Q", "♢Q", "♧Q", "♤K", "♡K", "♢K", "♧K", "♤A", "♡A", "♢A", "♧A"]
+
 const BLACKJACK = 21;
 const DEALER_MINIMUM = 17;
 const N_START_CARDS = 2;
+
 const NO_RESULT = 0;
 const PLAYER_LOSS = 1;
 const STANDOFF = 2;
@@ -13,28 +15,17 @@ function copyArray(array) {
     return copy;
 }
 
+// model
 class Deck {
     constructor(){
         this._deck = copyArray(BASE_DECK);
         this.shuffle();
     }
 
-    createArrayWithAllCards(){
-        // add number 2 thru 9
-        let arr = Array.from({length: 9}, (_, i) => i + 2)
-        // add letter cards
-        arr = arr.concat(['J', 'Q', 'K', 'A'])
-        // create for each letter and number in the array a variant for each suit
-        arr = arr.flatMap(e => Array.from('♤♡♢♧', s => s + e));
-        return arr;
-    }
-
     shuffle() {
         let i = 0;
         let h;
         let l = this._deck.length;
-        
-        console.log("Shuffling...");
         
         // go through the deck 'from left to right' and for each card either keep that card in position or swap it with a random card to the right of it
         for (let i = 0; i < l - 1; i++){
@@ -64,6 +55,7 @@ class Hand {
     get scores(){
         let score = 0;
         let nAces = 0;
+
         for (let card of this._cards){
             switch (card[1]) {
                 case "A":
@@ -86,43 +78,6 @@ class Hand {
         } else {
             return [score, score + 10];
         }
-
-
-        // // remove suits
-        // let hand = this._cards.map(e => e[1]);
-
-        // // save original number of cards
-        // let nCards = hand.length;
-
-        // // remove aces
-        // hand = hand.filter(e => e !== "A");
-
-        // // count aces
-        // let nAces = nCards - hand.length;
-
-        // // replace king, queen, jack by 10
-        // hand = hand.map(e => "KQJ".includes(e) ? 10: e);
-
-        // // replace strings of the number by the actual number
-        // hand = hand.map(e => Number(e));
-
-        // // count the score of the hands without aces (reduce has to include an initial value in case there are no non-ace cards)
-        // let score = hand.reduce((agg, cur) => agg + cur, 0);
-        
-        // // every ace is at least worth 1, so add 1 times the number of aces
-        // score += nAces;
-
-        // // // every ace can be either 1 or 11, so there will be nAces + 1 possible scores with the lowest being current 'score' and the highest current 'score' plus 10 times 'nAces'
-        // // let scores = Array.from({length: nAces + 1}, (_, i) => score + i * 10);
-        
-        // let scores;
-        // if (nAces) {
-        //     scores = [score, score + 10];
-        // } else {
-        //     scores = [score];
-        // }
-
-        // return scores;
     }
 
     get score(){
@@ -134,14 +89,13 @@ class Hand {
     }
 }
 
-
 class Model {
     constructor() {
         this._observers = [];
         this._status = NO_RESULT;
     }
 
-    reset(){
+    deal(){
         this._status = PLAYING;
 
         this._deck = new Deck();
@@ -159,7 +113,6 @@ class Model {
 
     hit(){
         if (!this.isInPlay) {
-            console.log('invalide hit click')
             return;
         }
 
@@ -173,19 +126,17 @@ class Model {
         if (!this.isInPlay) {
             return;
         }
+
         while (this.dealer.score < DEALER_MINIMUM) {
             this.dealer.addCard(this._deck.draw());
         }
         
         // speler heeft hier sowieso minder dan 21
         if (this.dealer.score > BLACKJACK || this.dealer.score < this.player.score) {
-            // speler heeft gewonnen
             this._status = PLAYER_WIN;
         } else if (this.dealer.score > this.player.score){
-            // dealer heeft gewonnen (dealer kan hier niet meer dan 21 hebben)
             this._status = PLAYER_LOSS;
         } else {
-            // standoff
             this._status = STANDOFF;
         }
 
@@ -205,7 +156,6 @@ class Model {
     }
 
     update(){
-        console.log(this.dealer.cards);
         this._observers.forEach(e => e.update());
     }
 
@@ -281,20 +231,19 @@ class DealerScoreView {
 class EndResultView {
     constructor(model) {
         this._model = model;
-        this._element = document.getElementById('winOrLoss');
+        this._element = document.getElementById('win_or_loss');
     }
-
 
     set visible(boolean) {
         if (boolean){
-            this._element.style.display = 'block';
+            this._element.style.display = 'inline';
         } else {
             this._element.style.display = 'none';
         }
     }
 
     get message(){
-        let m = '';
+        let m;
         switch (this._model.status) {
             case PLAYER_WIN:
                 m = "Je hebt gewonnen";
@@ -322,9 +271,7 @@ class EndResultView {
     }
 }
 
-
 // controller
-
 class DealOrHitButton {
     constructor(model, element) {
         this._model = model;
@@ -332,11 +279,10 @@ class DealOrHitButton {
     }
 
     handleEvent(_) {
-        console.log('eventtt')
         if (this._model.isInPlay) {
             this._model.hit();
         } else {
-            this._model.reset();
+            this._model.deal();
         }
     }
 
@@ -356,7 +302,6 @@ class PassButton {
     }
 
     handleEvent(_) {
-        console.log('evednttt')
         if (this._model.isInPlay) {
             this._model.pass();
         }
@@ -364,7 +309,7 @@ class PassButton {
 
     set visible(boolean) {
         if (boolean) {
-            this._element.style.display = 'block';
+            this._element.style.display = 'inline';
         } else {
             this._element.style.display = 'none';
         }
@@ -376,6 +321,7 @@ class PassButton {
 }
 
 let model = new Model();
+
 model.addObserver(new PlayerCardsView(model));
 model.addObserver(new DealerCardsView(model));
 model.addObserver(new PlayerScoreView(model));
@@ -384,9 +330,12 @@ model.addObserver(new EndResultView(model));
 
 let dealButtonElement = document.getElementById('deal_or_hit_button');
 let passButtonElement = document.getElementById('pass_button');
+
 let dealButton = new DealOrHitButton(model, dealButtonElement);
 let passButton = new PassButton(model, passButtonElement);
+
 dealButtonElement.addEventListener('click', dealButton);
 passButtonElement.addEventListener('click', passButton);
+
 model.addObserver(dealButton);
 model.addObserver(passButton);

@@ -1,3 +1,7 @@
-#winOrLoss {
+#win_or_loss {
+    display: none;
+}
+
+#pass_button {
     display: none;
 }
