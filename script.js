@@ -55,6 +55,15 @@ class Hand {
         return this._cards;
     }
 
+    // possible scores
+    //  - since each ace is worth at least 1 but can optionally add another 10,
+    //  - aces create [number of aces] + 1 possible scores
+    //  - we only need to give the first two options
+    //      1. count every ace as 1.
+    //      2. count 1 ace as 11 and the others as 1.
+    //  - because counting two or more aces as 11 will always generate a score higher than 21.
+    //  - if you want the option to change global constant BLACKJACK to a value higher than 21, this code needs to be updated to give more than the first 2 options
+       
     get scores(){
         let score = 0;
         let nAces = 0;
@@ -83,6 +92,14 @@ class Hand {
         }
     }
 
+    // current best score
+    // - the second score will always be higher than the first (see function get scores())
+    // - you want to pick the score that is highest but still below or equal to BLACKJACK
+    // - if there are more than 1 scores (i.e. 2), the second score is the highest
+    // - so we want to return the second score unless it is above BLACKJACK
+    // - if it is above BLACKJACK we return the first score
+    // - the first score could still be above BLACKJACK but that just means we're losing anyways
+    
     get score(){
         return (this.scores.length > 1 && this.scores[1] <= BLACKJACK) ? this.scores[1]: this.scores[0];
     }
