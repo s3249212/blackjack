@@ -58,12 +58,7 @@ class Hand {
     // possible scores
     //  - since each ace is worth at least 1 but can optionally add another 10,
     //  - aces create [number of aces] + 1 possible scores
-    //  - we only need to give the first two options
-    //      1. count every ace as 1.
-    //      2. count 1 ace as 11 and the others as 1.
-    //  - because counting two or more aces as 11 will always generate a score higher than 21.
-    //  - if you want the option to change global constant BLACKJACK to a value higher than 21, this code needs to be updated to give more than the first 2 options
-       
+    //  - we only need to give the first two options if BLACKJACK is 21 (or lower) but since we want to make it flexible we give all options
     get scores(){
         let score = 0;
         let nAces = 0;
@@ -85,23 +80,35 @@ class Hand {
             }
         }
 
-        if (nAces == 0) {
-            return [score];
-        } else {
-            return [score, score + 10];
+        let scores = [];
+
+        for (let i = 0; i <= nAces; i++){
+            scores.append(score + i * 10);
         }
+
+        return scores;
     }
 
     // current best score
-    // - the second score will always be higher than the first (see function get scores())
-    // - you want to pick the score that is highest but still below or equal to BLACKJACK
-    // - if there are more than 1 scores (i.e. 2), the second score is the highest
-    // - so we want to return the second score unless it is above BLACKJACK
-    // - if it is above BLACKJACK we return the first score
-    // - the first score could still be above BLACKJACK but that just means we're losing anyways
-    
+    // - the scores will always be in ascending order
+    // - therefore, if we go through the scores from back to front and pick the first option that is less than or equal to BLACKJACK, we have found our best score
+    // - if no score is less than or equal to BLACKJACK, we will have lost but we still need to return a value. We simply pick the first score in the list, since there is guaranteed to at least be one score in the list, and it will also be the one that is closest to BLACKJACK  
     get score(){
-        return (this.scores.length > 1 && this.scores[1] <= BLACKJACK) ? this.scores[1]: this.scores[0];
+        let bestScore;
+        let scores = this.scores;
+
+        for (let i = scores.length - 1; i >= 0; i--){
+            if (scores[i] <= BLACKJACK) {
+                bestScore = scores[i];
+                break;
+            }
+        }
+
+        if (bestScore === undefined) {
+            bestScore = scores[0];
+        }
+
+        return bestScore;
     }
 
     addCard(card){
