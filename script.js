@@ -4,6 +4,9 @@ const BLACKJACK = 21;
 const DEALER_MINIMUM = 17;
 const N_START_CARDS = 2;
 
+const DISPLAY_HIDDEN = 'none';
+const DISPLAY_VISIBLE = 'inline';
+
 const NO_RESULT = 0;
 const PLAYER_LOSS = 1;
 const STANDOFF = 2;
@@ -236,9 +239,9 @@ class EndResultView {
 
     set visible(boolean) {
         if (boolean){
-            this._element.style.display = 'inline';
+            this._element.style.display = DISPLAY_VISIBLE;
         } else {
-            this._element.style.display = 'none';
+            this._element.style.display = DISPLAY_HIDDEN;
         }
     }
 
@@ -309,9 +312,9 @@ class PassButton {
 
     set visible(boolean) {
         if (boolean) {
-            this._element.style.display = 'inline';
+            this._element.style.display = DISPLAY_VISIBLE;
         } else {
-            this._element.style.display = 'none';
+            this._element.style.display = DISPLAY_HIDDEN;
         }
     }
 
